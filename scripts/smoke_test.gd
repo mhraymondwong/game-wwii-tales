@@ -176,16 +176,16 @@ func _run() -> void:
 		push_error("SMOKE FAIL: action row still on the bottom")
 		quit(1)
 		return
-	if editor.get_node_or_null("UI/LeftColumn/GenerateButton") == null:
-		push_error("SMOKE FAIL: left panel missing generate")
+	if editor.get_node_or_null("UI/RightColumn/ActionGrid/GenerateButton") == null:
+		push_error("SMOKE FAIL: right panel missing generate")
 		quit(1)
 		return
-	var size_lab := editor.get_node_or_null("UI/LeftColumn/SizeLabel") as Label
+	var size_lab := editor.get_node_or_null("UI/RightColumn/SizeLabel") as Label
 	if size_lab == null or size_lab.text != "24×16":
 		push_error("SMOKE FAIL: size line expected 24×16 got %s" % (size_lab.text if size_lab else "null"))
 		quit(1)
 		return
-	var gen := editor.get_node("UI/LeftColumn/GenerateButton") as Button
+	var gen := editor.get_node("UI/RightColumn/ActionGrid/GenerateButton") as Button
 	if gen.text != "":
 		push_error("SMOKE FAIL: action button has a caption")
 		quit(1)
@@ -210,18 +210,28 @@ func _run() -> void:
 		quit(1)
 		return
 	await process_frame
-	var back := editor.get_node("UI/LeftColumn/BackButton") as Button
-	var panel := editor.get_node("UI/LeftPanel") as Control
+	var back := editor.get_node("UI/RightColumn/ActionGrid/BackButton") as Button
+	var panel := editor.get_node("UI/RightPanel") as Control
 	var back_end := back.get_global_rect().end.y
 	var panel_end := panel.get_global_rect().end.y
 	if back_end > panel_end + 1.0:
-		push_error("SMOKE FAIL: back button overflows left panel %.1f > %.1f" % [back_end, panel_end])
+		push_error("SMOKE FAIL: back button overflows right panel %.1f > %.1f" % [back_end, panel_end])
 		quit(1)
 		return
 	var brush := editor.get_node("UI/BrushRow") as Control
-	if brush.get_global_rect().position.x < panel.get_global_rect().end.x - 1.0 and brush.get_global_rect().position.y < panel_end:
-		push_error("SMOKE FAIL: brushes overlap the left panel")
+	var brush_rect := brush.get_global_rect()
+	var panel_rect := panel.get_global_rect()
+	if brush_rect.intersects(panel_rect):
+		push_error("SMOKE FAIL: brushes overlap the right panel")
 		quit(1)
 		return
-	print("SMOKE OK: map editor 24x16 left panel")
+	if editor.get_node_or_null("UI/MinimapFrame/MinimapView") == null:
+		push_error("SMOKE FAIL: editor missing minimap")
+		quit(1)
+		return
+	if panel_rect.position.x < 1000.0:
+		push_error("SMOKE FAIL: right panel not on the right got x=%.1f" % panel_rect.position.x)
+		quit(1)
+		return
+	print("SMOKE OK: map editor 24x16 right panel")
 	quit(0)

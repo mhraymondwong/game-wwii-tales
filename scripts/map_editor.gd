@@ -1,10 +1,12 @@
 extends Node2D
 ## Paint one custom map. Deploy columns are fixed: two on the left, two on the right.
+## Right panel holds minimap, size steppers, and action icons.
 
 const HEX_SIZE := 33.87
 const HEADER_H := 44.0
 const BOTTOM_TOP := 628.0
-const LEFT_W := 124.0
+const PANEL_LEFT := 1004.0
+const PLAY_INSET := 18.0
 const DRAG_THRESH := 8.0
 const MIN_COLS := 12
 const MAX_COLS := 80
@@ -15,13 +17,22 @@ const ICON_DIR := "res://assets/ui/processed/icons/editor/%s.png"
 const TERRAIN_ORDER: Array[String] = ["clear", "road", "forest", "hill", "town", "river", "swamp"]
 const BRASS := Color(0.78, 0.64, 0.32, 1)
 const GOLD := Color(1.0, 0.84, 0.38, 1)
+const MINI_COLOR := {
+	"clear": Color(0.64, 0.58, 0.36),
+	"forest": Color(0.16, 0.40, 0.20),
+	"hill": Color(0.52, 0.40, 0.26),
+	"town": Color(0.75, 0.70, 0.52),
+	"road": Color(0.80, 0.70, 0.42),
+	"river": Color(0.22, 0.45, 0.74),
+	"swamp": Color(0.36, 0.42, 0.22),
+}
 
 var cols := GameDefs.CUSTOM_COLS
 var rows := GameDefs.CUSTOM_ROWS
 var grid: Array = []
 var brush := "clear"
 var terrain_textures: Dictionary = {}
-var play_rect := Rect2(6, 46, 1268, 500)
+var play_rect := Rect2(PLAY_INSET, 46, 978, 500)
 var map_bounds := Rect2()
 var map_origin := Vector2.ZERO
 var cam_offset := Vector2.ZERO
@@ -36,6 +47,12 @@ var size_label: Label
 var col_value: Label
 var row_value: Label
 var brush_buttons: Dictionary = {}
+var minimap_view: Control
+var mini_drag := false
+var mini_moved := false
+var mini_press_local := Vector2.ZERO
+var mini_press_cam := Vector2.ZERO
+var _mini_tex: Texture2D
 
 
 func _ready() -> void:
@@ -43,7 +60,9 @@ func _ready() -> void:
 	_make_grid(cols, rows)
 	_wire_ui()
 	_layout_map()
+	_rebuild_minimap_cache()
 	_refresh_size_label()
+	_refresh_minimap()
 	_set_status("左兩欄盟軍部署，右兩欄軸心部署。點格塗地形，拖曳平移。")
 
 
@@ -68,31 +87,34 @@ func _grid_from(loaded: Array) -> void:
 	grid = loaded
 	rows = grid.size()
 	cols = (grid[0] as Array).size()
+	cam_offset = Vector2.ZERO
 	_layout_map()
+	_rebuild_minimap_cache()
 	_refresh_size_label()
+	_refresh_minimap()
 	queue_redraw()
 
 
 func _wire_ui() -> void:
 	status_label = $UI/StatusLabel
 	UiStyle.apply_font(status_label, 16, Color(0.92, 0.9, 0.8))
-	size_label = $UI/LeftColumn/SizeLabel
-	col_value = $UI/LeftColumn/ColStep/ColValue
-	row_value = $UI/LeftColumn/RowStep/RowValue
+	size_label = $UI/RightColumn/SizeLabel
+	col_value = $UI/RightColumn/ColStep/ColValue
+	row_value = $UI/RightColumn/RowStep/RowValue
 	UiStyle.apply_font(size_label, 18, Color(0.96, 0.88, 0.55))
 	size_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UiStyle.apply_font(col_value, 15, Color(0.92, 0.86, 0.62))
 	col_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UiStyle.apply_font(row_value, 15, Color(0.92, 0.86, 0.62))
 	row_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_setup_step($UI/LeftColumn/ColStep/ColMinus)
-	_setup_step($UI/LeftColumn/ColStep/ColPlus)
-	_setup_step($UI/LeftColumn/RowStep/RowMinus)
-	_setup_step($UI/LeftColumn/RowStep/RowPlus)
-	$UI/LeftColumn/ColStep/ColMinus.pressed.connect(_nudge_cols.bind(-1))
-	$UI/LeftColumn/ColStep/ColPlus.pressed.connect(_nudge_cols.bind(1))
-	$UI/LeftColumn/RowStep/RowMinus.pressed.connect(_nudge_rows.bind(-1))
-	$UI/LeftColumn/RowStep/RowPlus.pressed.connect(_nudge_rows.bind(1))
+	_setup_step($UI/RightColumn/ColStep/ColMinus)
+	_setup_step($UI/RightColumn/ColStep/ColPlus)
+	_setup_step($UI/RightColumn/RowStep/RowMinus)
+	_setup_step($UI/RightColumn/RowStep/RowPlus)
+	$UI/RightColumn/ColStep/ColMinus.pressed.connect(_nudge_cols.bind(-1))
+	$UI/RightColumn/ColStep/ColPlus.pressed.connect(_nudge_cols.bind(1))
+	$UI/RightColumn/RowStep/RowMinus.pressed.connect(_nudge_rows.bind(-1))
+	$UI/RightColumn/RowStep/RowPlus.pressed.connect(_nudge_rows.bind(1))
 	var brushes := $UI/BrushRow
 	for tid in TERRAIN_ORDER:
 		var b := brushes.get_node("Brush" + tid) as Button
@@ -100,13 +122,18 @@ func _wire_ui() -> void:
 		b.pressed.connect(_pick_brush.bind(tid))
 		brush_buttons[tid] = b
 	_mark_brush()
-	var actions := $UI/LeftColumn
+	var actions := $UI/RightColumn/ActionGrid
 	_bind_action(actions.get_node("GenerateButton"), "editor-generate", _on_generate)
 	_bind_action(actions.get_node("ClearButton"), "editor-clear", _on_clear)
 	_bind_action(actions.get_node("SaveButton"), "editor-save", _on_save)
 	_bind_action(actions.get_node("LoadButton"), "editor-load", _on_load)
 	_bind_action(actions.get_node("TryButton"), "editor-play", _on_try)
 	_bind_action(actions.get_node("BackButton"), "editor-back", _on_back)
+	minimap_view = $UI/MinimapFrame/MinimapView
+	UiStyle.style_panel($UI/MinimapFrame as PanelContainer)
+	# Center the 2-col action grid inside the right column.
+	var grid_box := actions as GridContainer
+	grid_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
 func _bind_action(node: Node, stem: String, cb: Callable) -> void:
@@ -197,15 +224,19 @@ func _on_generate() -> void:
 	rows = grid.size()
 	cols = (grid[0] as Array).size()
 	_layout_map()
+	_rebuild_minimap_cache()
 	_set_status("已自動生成　%d×%d" % [cols, rows])
+	_refresh_minimap()
 	queue_redraw()
 
 
 func _on_clear() -> void:
 	_make_grid(cols, rows)
 	_layout_map()
+	_rebuild_minimap_cache()
 	_refresh_size_label()
 	_set_status("已清空")
+	_refresh_minimap()
 	queue_redraw()
 
 
@@ -239,8 +270,10 @@ func _resize_to(new_cols: int, new_rows: int) -> void:
 	rows = new_rows
 	cam_offset = Vector2.ZERO
 	_layout_map()
+	_rebuild_minimap_cache()
 	_refresh_size_label()
 	_set_status("地圖　%d×%d" % [cols, rows])
+	_refresh_minimap()
 	queue_redraw()
 
 
@@ -286,7 +319,14 @@ func _on_back() -> void:
 
 
 func _layout_map() -> void:
-	play_rect = Rect2(LEFT_W + 4.0, HEADER_H + 2.0, 1280.0 - LEFT_W - 10.0, BOTTOM_TOP - 6.0 - (HEADER_H + 2.0))
+	# Map fills the area left of the right panel, with a small left inset so the
+	# outer hex column is not clipped against the window edge.
+	play_rect = Rect2(
+		PLAY_INSET,
+		HEADER_H + 2.0,
+		PANEL_LEFT - PLAY_INSET - 6.0,
+		BOTTOM_TOP - 6.0 - (HEADER_H + 2.0)
+	)
 	var w_factor := (float(cols) + 0.5) * sqrt(3.0)
 	var h_factor := (float(rows) - 1.0) * 1.5 + 2.0
 	var map_w := w_factor * HEX_SIZE
@@ -382,6 +422,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if panning:
 			cam_offset = pan_anchor_cam - (motion.position - pan_anchor_mouse)
 			_clamp_cam()
+			_refresh_minimap()
 		queue_redraw()
 		return
 	if not (event is InputEventMouseButton):
@@ -415,4 +456,141 @@ func _paint_at(hex: Vector2i) -> void:
 	grid[hex.y][hex.x] = brush
 	var d: Dictionary = GameDefs.TERRAIN[brush]
 	_set_status("%s　欄 %d　列 %d" % [str(d["label"]), hex.x, hex.y])
+	_rebuild_minimap_cache()
+	_refresh_minimap()
 	queue_redraw()
+
+
+func _refresh_minimap() -> void:
+	if minimap_view != null:
+		minimap_view.queue_redraw()
+
+
+func _rebuild_minimap_cache() -> void:
+	var px_w := 280
+	var px_h := 180
+	var img := Image.create(px_w, px_h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0.12, 0.13, 0.11, 1))
+	if map_bounds.size.x >= 1.0 and not grid.is_empty():
+		# Stamp a small disk per hex so sparse boards (12×8) still look filled.
+		var stamp := maxi(2, int(round(minf(float(px_w) / float(cols + 1), float(px_h) / float(rows + 1)) * 0.55)))
+		for row in rows:
+			for col in cols:
+				var world := map_origin + HexUtils.oddr_to_pixel(col, row, HEX_SIZE)
+				var t := (world - map_bounds.position) / map_bounds.size
+				var cx := clampi(int(t.x * float(px_w)), 0, px_w - 1)
+				var cy := clampi(int(t.y * float(px_h)), 0, px_h - 1)
+				var colr: Color = MINI_COLOR.get(str(grid[row][col]), Color.GRAY)
+				for dy in range(-stamp, stamp + 1):
+					for dx in range(-stamp, stamp + 1):
+						if dx * dx + dy * dy > stamp * stamp:
+							continue
+						var x := cx + dx
+						var y := cy + dy
+						if x < 0 or y < 0 or x >= px_w or y >= px_h:
+							continue
+						img.set_pixel(x, y, colr)
+	_mini_tex = ImageTexture.create_from_image(img)
+
+
+func _minimap_content_rect(view_size: Vector2) -> Rect2:
+	var margin := 6.0
+	var avail := view_size - Vector2(margin * 2.0, margin * 2.0)
+	if avail.x < 4.0 or avail.y < 4.0 or map_bounds.size.x < 1.0 or map_bounds.size.y < 1.0:
+		return Rect2()
+	var map_aspect := map_bounds.size.x / map_bounds.size.y
+	var avail_aspect := avail.x / avail.y
+	var sz := Vector2(avail.y * map_aspect, avail.y) if avail_aspect > map_aspect else Vector2(avail.x, avail.x / map_aspect)
+	return Rect2((view_size - sz) * 0.5, sz)
+
+
+func _visible_world_rect() -> Rect2:
+	return Rect2(play_rect.position + cam_offset, play_rect.size)
+
+
+func _viewport_on_minimap(content: Rect2) -> Rect2:
+	if content.size.x < 1.0:
+		return Rect2()
+	var inter := _visible_world_rect().intersection(map_bounds)
+	if inter.size.x <= 0.0 or inter.size.y <= 0.0:
+		return content
+	var scale := content.size / map_bounds.size
+	return Rect2(content.position + (inter.position - map_bounds.position) * scale, inter.size * scale)
+
+
+func _minimap_to_world(local: Vector2, content: Rect2) -> Vector2:
+	var t := Vector2(0.5, 0.5)
+	if content.size.x > 0.0 and content.size.y > 0.0:
+		t = (local - content.position) / content.size
+	t.x = clampf(t.x, 0.0, 1.0)
+	t.y = clampf(t.y, 0.0, 1.0)
+	return map_bounds.position + Vector2(t.x * map_bounds.size.x, t.y * map_bounds.size.y)
+
+
+func _center_cam_on(world: Vector2) -> void:
+	cam_offset = world - play_rect.get_center()
+	_clamp_cam()
+
+
+func paint_minimap(c: Control) -> void:
+	c.draw_rect(Rect2(Vector2.ZERO, c.size), Color(0.06, 0.07, 0.08, 1))
+	var content := _minimap_content_rect(c.size)
+	if content.size.x < 2.0:
+		return
+	c.draw_rect(content, Color(0.14, 0.15, 0.12, 1))
+	if grid.is_empty():
+		return
+	if _mini_tex != null:
+		c.draw_texture_rect(_mini_tex, content, false)
+	else:
+		var scale := content.size / map_bounds.size
+		var rad := HEX_SIZE * minf(scale.x, scale.y) * 0.92
+		for row in range(rows):
+			for col in range(cols):
+				var world := map_origin + HexUtils.oddr_to_pixel(col, row, HEX_SIZE)
+				var center := content.position + (world - map_bounds.position) * scale
+				var tid: String = grid[row][col]
+				c.draw_colored_polygon(HexUtils.hex_corners(center, rad), MINI_COLOR.get(tid, Color.GRAY))
+	var box := _viewport_on_minimap(content)
+	c.draw_rect(box, Color(1.0, 0.92, 0.45, 0.16), true)
+	c.draw_rect(box, Color(1.0, 0.92, 0.45, 0.95), false, 2.0)
+
+
+func minimap_begin(local: Vector2, c: Control) -> void:
+	var content := _minimap_content_rect(c.size)
+	mini_drag = true
+	mini_moved = false
+	mini_press_local = local
+	var box := _viewport_on_minimap(content)
+	if not box.has_point(local):
+		_center_cam_on(_minimap_to_world(local, content))
+		mini_moved = true
+	mini_press_cam = cam_offset
+	mini_press_local = local
+	queue_redraw()
+	_refresh_minimap()
+
+
+func minimap_move(local: Vector2, c: Control) -> void:
+	if not mini_drag:
+		return
+	if local.distance_to(mini_press_local) < 3.0:
+		return
+	mini_moved = true
+	var content := _minimap_content_rect(c.size)
+	var w0 := _minimap_to_world(mini_press_local, content)
+	var w1 := _minimap_to_world(local, content)
+	cam_offset = mini_press_cam + (w1 - w0)
+	_clamp_cam()
+	queue_redraw()
+	_refresh_minimap()
+
+
+func minimap_end(local: Vector2, c: Control) -> void:
+	if mini_drag and not mini_moved:
+		var content := _minimap_content_rect(c.size)
+		_center_cam_on(_minimap_to_world(local, content))
+		queue_redraw()
+		_refresh_minimap()
+	mini_drag = false
+	mini_moved = false

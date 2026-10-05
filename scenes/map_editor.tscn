@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://hexfronteditor001"]
+[gd_scene load_steps=3 format=3 uid="uid://hexfronteditor001"]
 
 [ext_resource type="Script" path="res://scripts/map_editor.gd" id="1_editor"]
+[ext_resource type="Script" path="res://scripts/minimap_view.gd" id="2_mini"]
 
 [node name="MapEditor" type="Node2D"]
 script = ExtResource("1_editor")
@@ -23,126 +24,146 @@ color = Color(0.62, 0.5, 0.26, 0.85)
 [node name="StatusLabel" type="Label" parent="UI"]
 offset_left = 20.0
 offset_top = 6.0
-offset_right = 1260.0
+offset_right = 990.0
 offset_bottom = 40.0
 clip_text = true
 text = ""
 
-[node name="LeftPanel" type="ColorRect" parent="UI"]
+[node name="RightPanel" type="ColorRect" parent="UI"]
+offset_left = 1004.0
 offset_top = 44.0
-offset_right = 124.0
+offset_right = 1280.0
 offset_bottom = 628.0
 mouse_filter = 0
 color = Color(0.05, 0.06, 0.08, 0.96)
 
-[node name="LeftBrass" type="ColorRect" parent="UI/LeftPanel"]
-offset_left = 122.0
-offset_right = 124.0
+[node name="RightBrass" type="ColorRect" parent="UI/RightPanel"]
+offset_right = 2.0
 offset_bottom = 584.0
 mouse_filter = 2
 color = Color(0.78, 0.64, 0.32, 0.95)
 
-[node name="LeftColumn" type="VBoxContainer" parent="UI"]
-offset_left = 4.0
+[node name="MinimapFrame" type="PanelContainer" parent="UI"]
+offset_left = 1012.0
 offset_top = 52.0
-offset_right = 120.0
+offset_right = 1272.0
+offset_bottom = 192.0
+
+[node name="MinimapView" type="Control" parent="UI/MinimapFrame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 0
+script = ExtResource("2_mini")
+
+[node name="RightColumn" type="VBoxContainer" parent="UI"]
+offset_left = 1012.0
+offset_top = 200.0
+offset_right = 1272.0
 offset_bottom = 620.0
 theme_override_constants/separation = 6
 alignment = 0
 
-[node name="SizeLabel" type="Label" parent="UI/LeftColumn"]
+[node name="SizeLabel" type="Label" parent="UI/RightColumn"]
 layout_mode = 2
 text = "24×16"
 horizontal_alignment = 1
 
-[node name="ColStep" type="HBoxContainer" parent="UI/LeftColumn"]
+[node name="ColStep" type="HBoxContainer" parent="UI/RightColumn"]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="ColMinus" type="Button" parent="UI/LeftColumn/ColStep"]
+[node name="ColMinus" type="Button" parent="UI/RightColumn/ColStep"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = "−"
 
-[node name="ColValue" type="Label" parent="UI/LeftColumn/ColStep"]
+[node name="ColValue" type="Label" parent="UI/RightColumn/ColStep"]
 custom_minimum_size = Vector2(36, 32)
 layout_mode = 2
 text = "24"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ColPlus" type="Button" parent="UI/LeftColumn/ColStep"]
+[node name="ColPlus" type="Button" parent="UI/RightColumn/ColStep"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = "+"
 
-[node name="RowStep" type="HBoxContainer" parent="UI/LeftColumn"]
+[node name="RowStep" type="HBoxContainer" parent="UI/RightColumn"]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="RowMinus" type="Button" parent="UI/LeftColumn/RowStep"]
+[node name="RowMinus" type="Button" parent="UI/RightColumn/RowStep"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = "−"
 
-[node name="RowValue" type="Label" parent="UI/LeftColumn/RowStep"]
+[node name="RowValue" type="Label" parent="UI/RightColumn/RowStep"]
 custom_minimum_size = Vector2(36, 32)
 layout_mode = 2
 text = "16"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RowPlus" type="Button" parent="UI/LeftColumn/RowStep"]
+[node name="RowPlus" type="Button" parent="UI/RightColumn/RowStep"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = "+"
 
-[node name="GenerateButton" type="Button" parent="UI/LeftColumn"]
+[node name="ActionGrid" type="GridContainer" parent="UI/RightColumn"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="GenerateButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = ""
 
-[node name="ClearButton" type="Button" parent="UI/LeftColumn"]
+[node name="ClearButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = ""
 
-[node name="SaveButton" type="Button" parent="UI/LeftColumn"]
+[node name="SaveButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = ""
 
-[node name="LoadButton" type="Button" parent="UI/LeftColumn"]
+[node name="LoadButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = ""
 
-[node name="TryButton" type="Button" parent="UI/LeftColumn"]
+[node name="TryButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = ""
 
-[node name="BackButton" type="Button" parent="UI/LeftColumn"]
+[node name="BackButton" type="Button" parent="UI/RightColumn/ActionGrid"]
 custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -163,9 +184,9 @@ mouse_filter = 2
 color = Color(0.78, 0.64, 0.32, 0.95)
 
 [node name="BrushRow" type="HBoxContainer" parent="UI"]
-offset_left = 140.0
+offset_left = 18.0
 offset_top = 640.0
-offset_right = 1264.0
+offset_right = 996.0
 offset_bottom = 712.0
 theme_override_constants/separation = 18
 alignment = 1
