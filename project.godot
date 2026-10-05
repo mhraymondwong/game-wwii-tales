@@ -1,0 +1,28 @@
+; Engine configuration file.
+; 二戰風雲錄 / WWII Tales — original WWII hex prototype (Godot 4)
+
+config_version=5
+
+[application]
+
+config/name="WWII Tales"
+config/description="Original WWII hex turn-based prototype"
+run/main_scene="res://scenes/start_screen.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://processed/terrain-town.png"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+
+[autoload]
+
+Session="*res://scripts/session.gd"
+Bgm="*res://scripts/bgm.gd"
+

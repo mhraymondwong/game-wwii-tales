@@ -1,0 +1,140 @@
+[gd_scene load_steps=3 format=3 uid="uid://hexfrontstart001"]
+
+[ext_resource type="Script" path="res://scripts/start_screen.gd" id="1_start"]
+[ext_resource type="Texture2D" path="res://assets/start-screen.jpg" id="2_bg"]
+
+[node name="StartScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_start")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+[node name="BottomGradient" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -280.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.02, 0.03, 0.05, 0.78)
+mouse_filter = 2
+
+[node name="Logo" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -240.0
+offset_top = 36.0
+offset_right = 240.0
+offset_bottom = 196.0
+grow_horizontal = 2
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="MenuBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -280.0
+offset_right = 160.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="StartButton" type="TextureButton" parent="MenuBox"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="HowToButton" type="TextureButton" parent="MenuBox"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="QuitButton" type="TextureButton" parent="MenuBox"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="HowToPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -240.0
+offset_right = 340.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HowToPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 22
+
+[node name="VBox" type="VBoxContainer" parent="HowToPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="HowTitle" type="Label" parent="HowToPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "如何遊玩"
+horizontal_alignment = 1
+
+[node name="HowBody" type="Label" parent="HowToPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+text = "• 開始戰鬥是熱座。對電腦則玩家為左側盟軍，電腦為右側軸心。地圖編輯只存一張圖，選關的自訂地圖用它。
+• 選關後雙方用該關點數購買：步兵2、裝甲偵察3、輕戰車4、中型戰車5、重戰車7、火砲4、工兵3。
+• 盟軍部署左側兩欄，軸心部署右側兩欄。車輛不能進入森林。
+• 共 5 回合。每方先砲擊（僅火砲），再移動，再直接射擊。
+• 火砲需友軍看見目標才能間接射擊；隣接時攻擊較低。
+• 目標：回合結束時佔領較多城鎮；同數則比擊毀單位。
+• 僅使用滑鼠點選操作。"
+autowrap_mode = 3
+
+[node name="BackButton" type="TextureButton" parent="HowToPanel/Margin/VBox"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+ignore_texture_size = true
+stretch_mode = 5
