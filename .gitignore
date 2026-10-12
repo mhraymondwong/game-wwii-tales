@@ -4,3 +4,9 @@
 *.tmp
 export_presets.cfg
 .DS_Store
+*.pck
+*.zip
+build/*.zip
+# Keep Godot PWA binaries tracked for GitHub Pages
+!build/pwa/*.pck
+!build/pwa/*.wasm
